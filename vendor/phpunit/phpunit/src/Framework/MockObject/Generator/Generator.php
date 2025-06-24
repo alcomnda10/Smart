@@ -151,7 +151,7 @@ final class Generator
             $callOriginalMethods,
         );
 
-        $object = $this->getObject(
+        $object = $this->instantiate(
             $mock,
             $type,
             $callOriginalConstructor,
@@ -176,7 +176,7 @@ final class Generator
      * @param list<class-string> $interfaces
      *
      * @throws RuntimeException
-     * @throws UnknownTypeException
+     * @throws UnknownInterfaceException
      */
     public function testDoubleForInterfaceIntersection(array $interfaces, bool $mockObject, bool $callAutoload = true, bool $returnValueGeneration = true): MockObject|Stub
     {
@@ -186,7 +186,7 @@ final class Generator
 
         foreach ($interfaces as $interface) {
             if (!interface_exists($interface, $callAutoload)) {
-                throw new UnknownTypeException($interface);
+                throw new UnknownInterfaceException($interface);
             }
         }
 
@@ -386,7 +386,7 @@ final class Generator
             ],
         );
 
-        return $this->getObject(
+        return $this->instantiate(
             new MockTrait(
                 $classTemplate->render(),
                 $className['className'],
@@ -602,7 +602,7 @@ final class Generator
      * @throws ReflectionException
      * @throws RuntimeException
      */
-    private function getObject(MockType $mockClass, string $type = '', bool $callOriginalConstructor = false, array $arguments = [], bool $callOriginalMethods = false, ?object $proxyTarget = null, bool $returnValueGeneration = true): object
+    private function instantiate(MockType $mockClass, string $type = '', bool $callOriginalConstructor = false, array $arguments = [], bool $callOriginalMethods = false, ?object $proxyTarget = null, bool $returnValueGeneration = true): object
     {
         $className = $mockClass->generate();
 
@@ -848,7 +848,7 @@ final class Generator
                     $message,
                 );
             } catch (NoTestCaseObjectOnCallStackException) {
-                EventFacade::emitter()->testRunnerTriggeredDeprecation($message);
+                EventFacade::emitter()->testRunnerTriggeredPhpunitDeprecation($message);
             }
         }
 

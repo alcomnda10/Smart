@@ -8,10 +8,10 @@ use Carbon\Carbon;
 
 class Alert extends Model
 {
-    protected $fillable = ['sensor_id', 'type', 'status',  'guidance'];
+    protected $fillable = ['sensor_id', 'type', 'status',  'guidance', 'icon'];
 
     protected function serializeDate(\DateTimeInterface $date)
     {
-        return Carbon::parse($date)->format('Y-m-d H:i:s'); 
+        return Carbon::parse($date)->format('Y-m-d H:i:s');
     }
 }

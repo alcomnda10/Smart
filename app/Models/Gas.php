@@ -1,0 +1,16 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+
+class Gas extends Model
+{
+    protected $fillable = ['sensor_id', 'type', 'status',  'guidance', 'icon'];
+
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return Carbon::parse($date)->format('Y-m-d H:i:s');
+    }
+}

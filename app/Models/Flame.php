@@ -8,7 +8,7 @@ use Carbon\Carbon;
 
 class Flame extends Model
 {
-    protected $fillable = ['sensor_id', 'type', 'status',  'guidance'];
+    protected $fillable = ['sensor_id', 'type', 'status',  'guidance', 'icon'];
 
     protected function serializeDate(\DateTimeInterface $date)
     {

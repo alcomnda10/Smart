@@ -4,11 +4,19 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Alert;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log; 
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
 
 class AlertController extends Controller
 {
+    private $messaging;
+    public function __construct()
+    {
+        $this->messaging = (new Factory)
+            ->withServiceAccount(storage_path('app/firebase_credentials.json'))->createMessaging();
+    }
     // جلب جميع التنبيهات
     public function index()
     {
@@ -23,24 +31,22 @@ class AlertController extends Controller
             'sensor_id' => 'required|string|max:255',
         ]);
 
+        $icon = asset('icon/famicons_water.png');
+
         $guidance = '💧 Shut off the water source immediately, disconnect the power supply, and contact a specialist.';
 
-        try {
-            $alert = Alert::create([
-                'sensor_id' => $request->sensor_id,
-                'type' => 'water',
-                'status' => 'detected',
-                'guidance' => $guidance,
-            ]);
 
-            if ($alert) {
-                $this->sendNotification("🚨 تسرب ماء!", "المستشعر: {$request->sensor_id}");
-                return response()->json(['message' => 'تم تسجيل تنبيه التسرب بنجاح!']);
-            }
-        } catch (\Exception $e) {
-            Log::error("خطأ أثناء تسجيل التنبيه: " . $e->getMessage());
-            return response()->json(['message' => 'حدث خطأ أثناء تسجيل التنبيه'], 500);
-        }
+        $alert = Alert::create([
+            'sensor_id' => $request->sensor_id,
+            'type' => 'water',
+            'status' => 'detected',
+            'guidance' => $guidance,
+            'icon' => $icon,
+        ]);
+
+
+        $this->sendNotification("🚨 تسرب ماء!", "الحق هتغرق");
+        return response()->json(['message' => 'تم تسجيل تنبيه التسرب بنجاح!']);
     }
 
     // حذف تنبيه معين
@@ -53,30 +59,16 @@ class AlertController extends Controller
     }
 
     // إرسال إشعار عبر Firebase
-    private function sendNotification($title, $body)
+    private function sendNotification(string $title, string $body)
     {
         try {
-            $url = config('services.fcm.url'); // استدعاء عنوان FCM من ملف الإعدادات
+            $message = CloudMessage::withTarget('topic', 'water')
+                ->withNotification(Notification::create($title, $body));
 
-            $response = Http::withHeaders([
-                'Authorization' => 'key=' . config('services.fcm.server_key'),
-                'Content-Type'  => 'application/json',
-            ])->post($url, [
-                "to" => "/topics/water_alerts",
-                "notification" => [
-                    "title" => $title,
-                    "body"  => $body,
-                    "sound" => "default"
-                ]
-            ]);
-
-            if ($response->successful()) {
-                Log::info("تم إرسال الإشعار بنجاح: " . $title);
-            } else {
-                Log::error("FCM Error: " . $response->body());
-            }
-        } catch (\Exception $e) {
-            Log::error("خطأ أثناء إرسال الإشعار: " . $e->getMessage());
+            $this->messaging->send($message);
+            Log::info("تم إرسال إشعار Firebase بنجاح");
+        } catch (\Throwable $e) {
+            Log::error("فشل إرسال إشعار Firebase: " . $e->getMessage());
         }
     }
 }
