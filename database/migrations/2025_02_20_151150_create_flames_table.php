@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('type')->default('Flame');
             $table->string('status')->default('detected');
             $table->text('guidance')->nullable(); 
+            $table->string('icon')->nullable();
             $table->timestamps();
         });
     }

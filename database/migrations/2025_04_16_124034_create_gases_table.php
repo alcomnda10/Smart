@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('type');
             $table->string('status');
             $table->text('guidance');
+            $table->string('icon')->nullable();
             $table->timestamps();
         });
     }
