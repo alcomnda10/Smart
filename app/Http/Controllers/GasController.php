@@ -12,18 +12,38 @@ use Illuminate\Http\Request;
 class GasController extends Controller
 {
     private $messaging;
+
     public function __construct()
     {
-        $this->messaging = (new Factory)
-            ->withServiceAccount(storage_path('app/firebase_credentials.json'))->createMessaging();
+        try {
+            // قراءة بيانات الاعتماد من متغير البيئة بعد فك تشفير base64
+            $firebaseJson = base64_decode(env('FIREBASE_CREDENTIALS_B64'));
+
+            if (!$firebaseJson) {
+                throw new \Exception("تعذر فك تشفير متغير FIREBASE_CREDENTIALS_B64");
+            }
+
+            $serviceAccount = json_decode($firebaseJson, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception("JSON غير صالح في بيانات اعتماد Firebase");
+            }
+
+            $this->messaging = (new Factory)
+                ->withServiceAccount($serviceAccount)
+                ->createMessaging();
+        } catch (\Throwable $e) {
+            Log::error("فشل تهيئة Firebase: " . $e->getMessage());
+            $this->messaging = null;
+        }
     }
+
     public function index()
     {
         $gasses = Gas::all();
         return response()->json($gasses);
     }
 
-    // استقبال تنبيه الحساس
     public function store(Request $request)
     {
         $request->validate([
@@ -42,8 +62,10 @@ class GasController extends Controller
             'icon' => $icon,
         ]);
 
-        // إرسال إشعار للتطبيق
-        $this->sendNotification("🚨 انذار غاز", "امشي من المكان هتتخنق");
+        // إرسال إشعار إذا كانت Firebase مفعلة
+        if ($this->messaging) {
+            $this->sendNotification("🚨 انذار غاز", "امشي من المكان هتتخنق");
+        }
 
         return response()->json(['message' => 'تم تسجيل تنبيه الغاز بنجاح!']);
     }
@@ -61,7 +83,6 @@ class GasController extends Controller
         return response()->json(['message' => 'تم حذف التنبيه بنجاح']);
     }
 
-    // إرسال إشعار عبر Firebase
     private function sendNotification(string $title, string $body)
     {
         try {
