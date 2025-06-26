@@ -1,6 +1,5 @@
 <?php
 
-// app/Http/Controllers/WaterController.php
 namespace App\Http\Controllers;
 
 use App\Models\Water;
@@ -16,9 +15,26 @@ class WaterController extends Controller
 
     public function __construct()
     {
-        $this->messaging = (new Factory)
-            ->withServiceAccount(storage_path('app/firebase_credentials.json'))
-            ->createMessaging();
+        try {
+            $firebaseJson = base64_decode(env('FIREBASE_CREDENTIALS_B64'));
+
+            if (!$firebaseJson) {
+                throw new \Exception("تعذر فك تشفير متغير FIREBASE_CREDENTIALS_B64");
+            }
+
+            $serviceAccount = json_decode($firebaseJson, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception("JSON غير صالح في بيانات اعتماد Firebase");
+            }
+
+            $this->messaging = (new Factory)
+                ->withServiceAccount($serviceAccount)
+                ->createMessaging();
+        } catch (\Throwable $e) {
+            Log::error("فشل تهيئة Firebase في WaterController: " . $e->getMessage());
+            $this->messaging = null;
+        }
     }
 
     /** جلب جميع تنبيهات الماء */
@@ -42,7 +58,9 @@ class WaterController extends Controller
             'icon'      => asset('icon/famicons_water.png'),
         ]);
 
-        $this->sendNotification("🚨 تسرب ماء!", "الحق هتغرق");
+        if ($this->messaging) {
+            $this->sendNotification("🚨 تسرب ماء!", "الحق هتغرق");
+        }
 
         return response()->json([
             'message' => 'تم تسجيل تنبيه الماء بنجاح!',
