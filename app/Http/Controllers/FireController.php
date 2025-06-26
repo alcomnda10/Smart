@@ -15,9 +15,27 @@ class FireController extends Controller
 
     public function __construct()
     {
-        $this->messaging = (new Factory)
-            ->withServiceAccount(storage_path('app/firebase_credentials.json'))
-            ->createMessaging();
+        try {
+            // قراءة بيانات الاعتماد من متغير البيئة بعد فك تشفير base64
+            $firebaseJson = base64_decode(env('FIREBASE_CREDENTIALS_B64'));
+
+            if (!$firebaseJson) {
+                throw new \Exception("تعذر فك تشفير متغير FIREBASE_CREDENTIALS_B64");
+            }
+
+            $serviceAccount = json_decode($firebaseJson, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception("JSON غير صالح في بيانات اعتماد Firebase");
+            }
+
+            $this->messaging = (new Factory)
+                ->withServiceAccount($serviceAccount)
+                ->createMessaging();
+        } catch (\Throwable $e) {
+            Log::error("فشل تهيئة Firebase في FireController: " . $e->getMessage());
+            $this->messaging = null;
+        }
     }
 
     public function index()
@@ -42,7 +60,10 @@ class FireController extends Controller
             'icon' => $icon,
         ]);
 
-        $this->sendNotification("🚨 Fire Alert", "في حريقة اجري");
+        // إرسال إشعار إذا كانت Firebase مفعّلة
+        if ($this->messaging) {
+            $this->sendNotification("🚨 Fire Alert", "في حريقة اجري");
+        }
 
         return response()->json(['message' => 'تم تسجيل تنبيه الحريق بنجاح!']);
     }
