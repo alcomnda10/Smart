@@ -59,7 +59,7 @@ class WaterController extends Controller
         ]);
 
         if ($this->messaging) {
-            $this->sendNotification("🚨 تسرب ماء!", "الحق هتغرق");
+            $this->sendNotification("🚨 تسرب ماء!", "انذار ماء");
         }
 
         return response()->json([
