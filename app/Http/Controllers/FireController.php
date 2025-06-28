@@ -62,7 +62,7 @@ class FireController extends Controller
 
         // إرسال إشعار إذا كانت Firebase مفعّلة
         if ($this->messaging) {
-            $this->sendNotification("🚨 Fire Alert", "في حريقة اجري");
+            $this->sendNotification("🚨 Fire Alert", "تحذير حريق");
         }
 
         return response()->json(['message' => 'تم تسجيل تنبيه الحريق بنجاح!']);
