@@ -64,7 +64,7 @@ class GasController extends Controller
 
         // إرسال إشعار إذا كانت Firebase مفعلة
         if ($this->messaging) {
-            $this->sendNotification("🚨 انذار غاز", "امشي من المكان هتتخنق");
+            $this->sendNotification("🚨 انذار غاز", "  تسرب غاز");
         }
 
         return response()->json(['message' => 'تم تسجيل تنبيه الغاز بنجاح!']);
